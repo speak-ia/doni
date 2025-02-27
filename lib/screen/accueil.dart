@@ -46,6 +46,19 @@ class _AccueilState extends State<Accueil> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchInitialData();
+    });
+  }
+
+  void _fetchInitialData() {
+    final enqueteProvider = Provider.of<EnqueteProvider>(context, listen: false);
+    enqueteProvider.fetchEnquetes(context); // Appelle fetchEnquetes avec le BuildContext
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -197,11 +210,11 @@ class _AccueilState extends State<Accueil> {
                           }
                         },
                         title: enquete.title,
-                        description: enquete.title,
+                        description: enquete.description, // Correction : 'enquete.description' au lieu de 'enquete.title'
                         image: 'assets/images/logo.png',
                         status: enquete.status,
                       );
-                     },
+                    },
                   );
                 },
               ),

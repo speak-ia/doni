@@ -22,7 +22,9 @@ class Question {
       id: doc.id,
       text: data['text'] ?? '',
       type: data['type'] ?? '',
-      options: List<String>.from(data['options'] ?? []),
+      options: (data['options'] != null)
+          ? List<String>.from(data['options'])
+          : [], // Gestion des valeurs nulles
       surveyId: data['surveyId'] ?? '',
     );
   }
@@ -60,28 +62,42 @@ class QuestionProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchQuestions(String surveyId) async {
-  _isLoading = true;
-  notifyListeners();
+    _isLoading = true;
+    notifyListeners();
 
-  try {
-    QuerySnapshot snapshot = await _firestore
-        .collection('questions') // Assurez-vous que la collection est correcte
-        .where('surveyId', isEqualTo: surveyId) // Filtrer par surveyId
-        .get();
-        print("Nombre de questions récupérées : ${_questions.length}");
+    print("Début de la récupération des questions pour surveyId: $surveyId");
 
-    _questions = snapshot.docs.map((doc) => Question.fromFirestore(doc)).toList();
-    
-  } catch (e) {
-    print("Erreur lors de la récupération des questions: $e");
+    try {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('questions')
+          .where('surveyId', isEqualTo: surveyId)
+          .get();
+
+      print("Nombre de questions trouvées : ${querySnapshot.docs.length}");
+
+      _questions = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        print("Données Firestore pour la question ${doc.id}: $data");
+
+        return Question(
+          id: doc.id,
+          text: data['text'] ?? '',
+          type: data['type'] ?? '',
+          options: (data['options'] is List)
+              ? List<String>.from(data['options'])
+              : [],
+          surveyId: data['surveyId'] ?? '',
+        );
+      }).toList();
+
+      print("Questions récupérées : $_questions");
+    } catch (e) {
+      print("Erreur lors de la récupération des questions : $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
-  
-
-
-  _isLoading = false;
-  notifyListeners();
-}
-
 
   Future<void> submitAnswer(Answer answer) async {
     try {

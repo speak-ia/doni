@@ -142,15 +142,14 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
             if (isAccepted)
               ElevatedButton(
                 onPressed: () {
-                  // Passer l'ID de l'enquête à QuestionnaireScreen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => QuestionnaireScreen(
-                        surveyId: widget.enquete['surveyId'] ?? '',
-                      ),
-                    ),
-                  );
+                // Exemple dans une page précédente
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => QuestionnaireScreen(surveyId: "WPycFuifmhiFxpqO5lep"),
+  ),
+);
+
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,

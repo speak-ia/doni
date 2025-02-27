@@ -19,7 +19,16 @@ class ProfileScreen extends StatelessWidget {
       );
     }
 
-    final user = userProvider.user!;
+   if (userProvider.user == null) {
+  return const Scaffold(
+    body: Center(
+      child: Text("Aucune donnée utilisateur disponible."),
+    ),
+  );
+}
+
+final user = userProvider.user!;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -49,8 +58,8 @@ class ProfileScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                    image: user.photoUrl.isNotEmpty
-                        ? NetworkImage(user.photoUrl)
+                    image: (user.photoUrl?.isNotEmpty ?? false)
+                        ? NetworkImage(user.photoUrl!)
                         : const AssetImage('assets/images/logo.png')
                             as ImageProvider,
                     fit: BoxFit.cover,
