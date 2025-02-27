@@ -1,12 +1,14 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:donidata/constante/category_item.dart';
 import 'package:donidata/constante/enquete_card.dart';
+import 'package:donidata/provider/enquete_provider.dart';
 import 'package:donidata/provider/userProvider.dart';
 import 'package:donidata/screen/drawer/notification_page.dart';
 import 'package:donidata/screen/custom_drawer.dart';
 import 'package:donidata/screen/detailsEnquete.dart';
 import 'package:donidata/screen/profil_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class Accueil extends StatefulWidget {
   const Accueil({super.key});
@@ -25,14 +27,23 @@ class _AccueilState extends State<Accueil> {
     {'name': 'Gouvernements', 'icon': Icons.account_balance},
   ];
 
-  final List<Map<String, String>> topEnquetes = [
-    {'title': 'Save the Children', 'description': 'Protection de l\'enfance', 'image': 'assets/images/top1.png'},
-    {'title': 'UN', 'description': 'Programme d\'éducation', 'image': 'assets/images/top1.png'},
-    {'title': 'PSI', 'description': 'Étude sur la santé publique', 'image': 'assets/images/top2.png'},
-    {'title': 'Gouvernement', 'description': 'Procédure d\'identification', 'image': 'assets/images/top1.png'},
-    {'title': 'Helen Keller Intl', 'description': 'Procédure d\'identification', 'image': 'assets/images/top2.png'},
-    {'title': 'Orange', 'description': 'Procédure d\'identification', 'image': 'assets/images/top3.png'},
-  ];
+  void _showInscriptionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Inscription impossible"),
+          content: Text("Vous ne pouvez pas vous inscrire à une enquête en cours ou active."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +51,7 @@ class _AccueilState extends State<Accueil> {
     final screenHeight = MediaQuery.of(context).size.height;
     final userProvider = Provider.of<UserProvider>(context);
     final user = userProvider.user;
+    final enqueteProvider = Provider.of<EnqueteProvider>(context);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -149,70 +161,47 @@ class _AccueilState extends State<Accueil> {
             SizedBox(height: screenHeight * 0.03),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.7,
-                ),
-                itemCount: topEnquetes.length < 9 ? topEnquetes.length : 9,
-                itemBuilder: (context, index) {
-                  return EnqueteCard(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EnqueteDetailPage(
-                              enquete: topEnquetes[index],
-                            ),
-                          ),
-                        );
-                      },
-
-                    title: topEnquetes[index]['title']!,
-                    description: topEnquetes[index]['description']!,
-                    image: topEnquetes[index]['image']!,
-                  );
-                },
-              ),
-            ),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {},
-                child: Text("Voir plus"),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.02),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.8,
-                ),
-                itemCount: (topEnquetes.length > 9) ? 3 : 0,
-                itemBuilder: (context, index) {
-                  return EnqueteCard(
-                          onTap: () {
+              child: Consumer<EnqueteProvider>(
+                builder: (context, enqueteProvider, child) {
+                  if (enqueteProvider.isLoading) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.6,
+                    ),
+                    itemCount: enqueteProvider.enquetes.length,
+                    itemBuilder: (context, index) {
+                      final enquete = enqueteProvider.enquetes[index];
+                      return EnqueteCard(
+                        onTap: () {
+                          if (enquete.status == "pending" || enquete.status == "active") {
+                            _showInscriptionDialog(context);
+                          } else {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => EnqueteDetailPage(
-                                  enquete: topEnquetes[index],
+                                  enquete: {
+                                    'title': enquete.title,
+                                    'description': enquete.description,
+                                  },
                                 ),
                               ),
                             );
-                          },
-
-                    title: topEnquetes.length > index + 9 ? topEnquetes[index + 9]['title']! : '',
-                    description: topEnquetes.length > index + 9 ? topEnquetes[index + 9]['description']! : '',
-                    image: topEnquetes.length > index + 9 ? topEnquetes[index + 9]['image']! : '',
+                          }
+                        },
+                        title: enquete.title,
+                        description: enquete.title,
+                        image: 'assets/images/logo.png',
+                        status: enquete.status,
+                      );
+                     },
                   );
                 },
               ),

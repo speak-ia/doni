@@ -1,6 +1,9 @@
-import 'package:donidata/screen/QuestionnaireScreen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:donidata/screen/QuestionnaireScreen.dart';
 import 'package:donidata/screen/profil_screen.dart';
+import 'package:donidata/provider/enquete_provider.dart';
+import 'package:donidata/provider/userProvider.dart';
 
 class EnqueteDetailPage extends StatefulWidget {
   final Map<String, String> enquete;
@@ -19,7 +22,7 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
     setState(() {
       isApplied = true;
     });
-    
+
     Future.delayed(const Duration(seconds: 2), () {
       setState(() {
         isAccepted = true;
@@ -34,6 +37,10 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+    final enqueteProvider = Provider.of<EnqueteProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue[100],
@@ -49,16 +56,18 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
               );
             },
             child: CircleAvatar(
-              backgroundImage: AssetImage("assets/images/logo.png"),
+              backgroundImage: user?.photoUrl != null
+                  ? NetworkImage(user!.photoUrl!)
+                  : AssetImage("assets/images/logo.png") as ImageProvider,
               radius: 30,
             ),
           ),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
-              'Moussa DIARRA',
+              user?.fullname ?? 'Nom inconnu',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -96,7 +105,7 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
         child: Column(
           children: [
             Text(
-              widget.enquete['titre'] ?? "Titre de l'enquête",
+              widget.enquete['title'] ?? "Titre de l'enquête",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -133,9 +142,14 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
             if (isAccepted)
               ElevatedButton(
                 onPressed: () {
+                  // Passer l'ID de l'enquête à QuestionnaireScreen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => QuestionnaireScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => QuestionnaireScreen(
+                        surveyId: widget.enquete['surveyId'] ?? '',
+                      ),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(

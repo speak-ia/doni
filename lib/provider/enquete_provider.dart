@@ -1,42 +1,55 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
+class Enquete {
+  //final String id;
+  final String title;
+  final String description;
+  final String status;
+  final String startDate;
+  final String endDate;
 
-// import 'package:donidata/models/enqueteModel.dart';
-// import 'package:donidata/services/serviceApi.dart';
-// import 'package:flutter/material.dart';
+  Enquete({
+    //required this.id,
+    required this.title,
+    required this.description,
+    required this.status,
+    required this.startDate,
+    required this.endDate,
+  });
 
-// class EnqueteProvider with ChangeNotifier {
-//   final ApiService _apiService = ApiService();
-//   List<Enquete> _enquetes = [];
-//   Enquete? _selectedEnquete;
-//   bool _isLoading = false;
+  factory Enquete.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Enquete(
+      title: data['title'] ?? 'Titre inconnu',
+      description: data['description'] ?? '',
+      status: data['status'] ?? '',
+      startDate: data['startDate'] ?? '',
+      endDate: data['endDate'] ?? '', 
+    );
+  }
+}
 
-//   List<Enquete> get enquetes => _enquetes;
-//   Enquete? get selectedEnquete => _selectedEnquete;
-//   bool get isLoading => _isLoading;
+class EnqueteProvider extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  List<Enquete> _enquetes = [];
+  bool _isLoading = false;
 
-//   // Charger toutes les enquêtes
-//   Future<void> getAllEnquetes() async {
-//     _isLoading = true;
-//     notifyListeners();
+  List<Enquete> get enquetes => _enquetes;
+  bool get isLoading => _isLoading;
 
-//     try {
-//       final response = await _apiService.get('/enquetes/');
-//       _enquetes = (response.data as List)
-//           .map((json) => Enquete.fromJson(json))
-//           .toList();
-//     } catch (e) {
-//       print('Erreur lors du chargement des enquêtes: $e');
-//       rethrow;
-//     } finally {
-//       _isLoading = false;
-//       notifyListeners();
-//     }
-//   }
+  Future<void> fetchEnquetes() async {
+    _isLoading = true;
+    notifyListeners();
 
-//   Future<void> applyForEnquete(String? enqueteId) async {
-//     if (enqueteId == null) throw Exception('ID de l\'enquête invalide');
-//     // Add your API call or database logic here
-//     // For example:
-//     // await _api.postApplication(enqueteId);
-//   }
-// }
+    try {
+      QuerySnapshot snapshot = await _firestore.collection('surveys').get();
+      _enquetes = snapshot.docs.map((doc) => Enquete.fromFirestore(doc)).toList();
+    } catch (e) {
+      print("Erreur lors de la récupération des enquêtes: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+}
