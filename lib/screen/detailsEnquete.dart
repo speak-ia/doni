@@ -4,6 +4,7 @@ import 'package:donidata/screen/QuestionnaireScreen.dart';
 import 'package:donidata/screen/profil_screen.dart';
 import 'package:donidata/provider/enquete_provider.dart';
 import 'package:donidata/provider/userProvider.dart';
+import 'package:donidata/models/enqueteModel.dart'; // Assure-toi d'importer le modèle Enquete
 
 class EnqueteDetailPage extends StatefulWidget {
   final Map<String, String> enquete;
@@ -39,7 +40,21 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final user = userProvider.user;
-    final enqueteProvider = Provider.of<EnqueteProvider>(context);
+    final enqueteProvider = Provider.of<EnqueteProvider>(context, listen: false); // Évite de réécouter ici
+
+    // Trouver l'enquête correspondante dans EnqueteProvider en utilisant le titre ou une autre propriété unique
+    final currentEnquete = enqueteProvider.enquetes.firstWhere(
+      (enquete) => enquete.title == widget.enquete['title'],
+      orElse: () => Enquete(
+        surveyId: "",
+        title: widget.enquete['title'] ?? "Survey not found",
+        description: widget.enquete['description'] ?? "",
+        status: "",
+        startDate: "",
+        endDate: "",
+        investigatorId: user?.uid ?? "",
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -142,14 +157,12 @@ class _EnqueteDetailPageState extends State<EnqueteDetailPage> {
             if (isAccepted)
               ElevatedButton(
                 onPressed: () {
-                // Exemple dans une page précédente
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => QuestionnaireScreen(surveyId: "WPycFuifmhiFxpqO5lep"),
-  ),
-);
-
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QuestionnaireScreen(surveyId: currentEnquete.surveyId), // Utilise le surveyId de l'enquête actuelle
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,

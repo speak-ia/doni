@@ -117,7 +117,7 @@ final user = userProvider.user!;
 
               const SizedBox(height: 20),
 
-              // Bouton "Déconnexion"
+              
               ElevatedButton(
                 onPressed: () async {
                   try {
@@ -126,7 +126,7 @@ final user = userProvider.user!;
                     if (currentUser != null) {
                       final uid = currentUser.uid;
 
-                      // Supprimer les données utilisateur dans Firestore
+                      
                       await FirebaseFirestore.instance
                           .collection('investigators')
                           .doc(uid)

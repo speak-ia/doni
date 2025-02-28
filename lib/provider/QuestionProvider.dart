@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class Question {
   final String id;
   final String text;
-  final String type;
-  final List<String> options;
+  final String type; // "boolean" ou "text"
+  final List<String> options; // ["Oui", "Non"] pour boolean, vide ou non pour text
   final String surveyId;
 
   Question({
@@ -18,13 +18,18 @@ class Question {
 
   factory Question.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final type = data['type'] ?? '';
+    if (type != 'boolean' && type != 'text') {
+      throw Exception("Type de question non pris en charge : $type. Seuls 'boolean' et 'text' sont autorisés.");
+    }
+
     return Question(
       id: doc.id,
       text: data['text'] ?? '',
-      type: data['type'] ?? '',
-      options: (data['options'] != null)
-          ? List<String>.from(data['options'])
-          : [], // Gestion des valeurs nulles
+      type: type,
+      options: (data['options'] != null && data['options'] is List)
+          ? List<String>.from(data['options']) // ["Oui", "Non"] pour boolean, vide ou autre pour text
+          : (type == 'boolean' ? ["Oui", "Non"] : []), // Défaut : "Oui/Non" pour boolean, vide pour text
       surveyId: data['surveyId'] ?? '',
     );
   }
@@ -63,11 +68,12 @@ class QuestionProvider extends ChangeNotifier {
 
   Future<void> fetchQuestions(String surveyId) async {
     _isLoading = true;
-    notifyListeners();
+    notifyListeners(); // Notifie immédiatement que le chargement commence
 
     print("Début de la récupération des questions pour surveyId: $surveyId");
 
     try {
+      _questions = []; // Réinitialise la liste avant de charger de nouvelles questions
       QuerySnapshot querySnapshot = await _firestore
           .collection('questions')
           .where('surveyId', isEqualTo: surveyId)
@@ -79,24 +85,17 @@ class QuestionProvider extends ChangeNotifier {
         final data = doc.data() as Map<String, dynamic>;
         print("Données Firestore pour la question ${doc.id}: $data");
 
-        return Question(
-          id: doc.id,
-          text: data['text'] ?? '',
-          type: data['type'] ?? '',
-          options: (data['options'] is List)
-              ? List<String>.from(data['options'])
-              : [],
-          surveyId: data['surveyId'] ?? '',
-        );
+        return Question.fromFirestore(doc); // Utilise la factory pour valider le type
       }).toList();
 
       print("Questions récupérées : $_questions");
     } catch (e) {
       print("Erreur lors de la récupération des questions : $e");
+      _questions = []; // Réinitialise en cas d'erreur
     }
 
     _isLoading = false;
-    notifyListeners();
+    notifyListeners(); // Notifie que le chargement est terminé
   }
 
   Future<void> submitAnswer(Answer answer) async {

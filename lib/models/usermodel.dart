@@ -17,9 +17,9 @@ class UserModel {
     this.location,
   });
 
-  factory UserModel.fromDocument(Map<String, dynamic> data) {
+  factory UserModel.fromDocument(Map<String, dynamic> data, String documentId) {
     return UserModel(
-      uid: data['uid'] ?? data['firebase_id'],
+      uid: documentId, 
       fullname: data['fullname'] ?? '',
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',

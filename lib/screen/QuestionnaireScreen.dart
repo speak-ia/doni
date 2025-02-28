@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:donidata/provider/QuestionProvider.dart';
 import 'package:donidata/provider/enquete_provider.dart'; 
-//import 'package:donidata/provider/user_provider.dart'; // Utilisation de user_provider.dart
 import 'package:donidata/screen/accueil.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
-  final String surveyId; // Utilisation de surveyId comme identifiant de l'enquête
+  final String surveyId; 
 
   QuestionnaireScreen({required this.surveyId});
 
@@ -18,7 +17,7 @@ class QuestionnaireScreen extends StatefulWidget {
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   int _currentQuestionIndex = 0;
-  String? selectedAnswer;
+  String? selectedAnswer; // "Oui", "Non", ou une réponse textuelle
 
   @override
   void initState() {
@@ -32,10 +31,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   void _nextQuestion() {
     final questionProvider = Provider.of<QuestionProvider>(context, listen: false);
+    print("Passage à la question suivante. Index actuel : $_currentQuestionIndex, Total questions : ${questionProvider.questions.length}");
     if (_currentQuestionIndex < questionProvider.questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
-        selectedAnswer = null; // Réinitialise la réponse sélectionnée pour la nouvelle question
+        selectedAnswer = null; // Réinitialise la réponse pour la nouvelle question
       });
     } else {
       _finishQuestionnaire();
@@ -69,7 +69,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     final questionProvider = Provider.of<QuestionProvider>(context);
-    final enqueteProvider = Provider.of<EnqueteProvider>(context, listen: false); // Évite de réécouter ici
+    final enqueteProvider = Provider.of<EnqueteProvider>(context, listen: false); 
     final userProvider = Provider.of<UserProvider>(context);
     final questions = questionProvider.questions;
     final currentEnquete = enqueteProvider.enquetes.firstWhere(
@@ -90,6 +90,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (questionProvider.isLoading) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.blue[100],
+          elevation: 0,
           title: Text(currentEnquete.title),
         ),
         body: Center(child: CircularProgressIndicator()),
@@ -99,6 +101,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.blue[100],
+          elevation: 0,
           title: Text(currentEnquete.title),
         ),
         body: Center(child: Text("No questions available for this survey.")),
@@ -107,49 +111,125 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
     final currentQuestion = questions[_currentQuestionIndex];
     final currentUser = userProvider.user; 
+    print("Questions chargées : $questions, Longueur : ${questions.length}, Index courant : $_currentQuestionIndex");
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.blue[100],
+        elevation: 0,
         title: Text(currentEnquete.title),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              currentQuestion.text,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            ...currentQuestion.options.map((option) {
-              return ListTile(
-                title: Text(option),
-                trailing: selectedAnswer == option ? Icon(Icons.check, color: Colors.black) : null,
-                onTap: () {
-                  setState(() {
-                    selectedAnswer = option;
-                  });
-                },
-              );
-            }).toList(),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: selectedAnswer == null
-                  ? null
-                  : () {
-                      final answer = Answer(
-                        questionId: currentQuestion.id,
-                        response: selectedAnswer!,
-                        surveyId: currentQuestion.surveyId,
-                        investigatorId: currentUser?.uid ?? "", 
-                      );
-                      questionProvider.submitAnswer(answer);
-                      _nextQuestion(); 
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Card(
+                color: Colors.lightBlue[100],
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    currentQuestion.text,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              if (currentQuestion.type == 'boolean')
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedAnswer = "Oui";
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: selectedAnswer == "Oui" ? Colors.green : Colors.blue,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        "Oui",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                    SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedAnswer = "Non";
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: selectedAnswer == "Non" ? Colors.green : Colors.blue,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        "Non",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                )
+              else if (currentQuestion.type == 'text')
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Your answer',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedAnswer = value; 
+                      });
                     },
-              child: Text(isLastQuestion ? "Finish" : "Next"),
-            ),
-          ],
+                    controller: TextEditingController(text: selectedAnswer ?? ''),
+                  ),
+                )
+              else
+                Text("Type de question non pris en charge : ${currentQuestion.type}"),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: selectedAnswer == null
+                    ? null
+                    : () {
+                        final answer = Answer(
+                          questionId: currentQuestion.id,
+                          response: selectedAnswer!,
+                          surveyId: currentQuestion.surveyId,
+                          investigatorId: currentUser?.uid ?? "",
+                        );
+                        questionProvider.submitAnswer(answer);
+                        _nextQuestion();
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  isLastQuestion ? "Finish" : "Ok",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

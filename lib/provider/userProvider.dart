@@ -16,6 +16,7 @@ class UserProvider with ChangeNotifier {
   UserProvider() {
     // Surveiller les changements d'utilisateur
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      print("Changement d'état d'authentification: ${user?.uid ?? 'Aucun utilisateur'}");
       if (user != null) {
         fetchUserData(); 
       } else {
@@ -24,42 +25,46 @@ class UserProvider with ChangeNotifier {
       }
     });
   }
+Future<void> fetchUserData() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-  Future<void> fetchUserData() async {
-  try {
-    _isLoading = true;
-    notifyListeners();
+      final currentUser = FirebaseAuth.instance.currentUser;
+      print("Utilisateur connecté : ${currentUser?.uid ?? 'Aucun utilisateur connecté'}");
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      print("⚠️ Aucun utilisateur connecté.");
-      _user = null;
+      if (currentUser == null) {
+        print("⚠️ Aucun utilisateur connecté.");
+        _user = null;
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final uid = currentUser.uid;
+      print("Recherche des données pour UID : $uid dans la collection 'investigators'");
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('investigators')
+          .doc(uid)
+          .get();
+
+      print("Document existe : ${snapshot.exists}, Données : ${snapshot.data()}");
+      if (snapshot.exists && snapshot.data() != null) {
+        _user = UserModel.fromDocument(snapshot.data()!, snapshot.id); // Passe snapshot.id comme uid
+        print("Données utilisateur chargées : ${_user!.fullname}");
+      } else {
+        print("⚠️ Aucune donnée trouvée pour cet utilisateur.");
+        _user = null;
+      }
+    } catch (e) {
+      print("Erreur lors de la récupération des données utilisateur : $e");
+      _user = null; // Assure-toi de réinitialiser _user en cas d'erreur
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return;
     }
-
-    final uid = currentUser.uid;
-    final snapshot = await FirebaseFirestore.instance
-        .collection('investigators')
-        .doc(uid)
-        .get();
-
-    if (snapshot.exists && snapshot.data() != null) {
-      _user = UserModel.fromDocument(snapshot.data()!);
-      print("Données utilisateur chargées : ${_user!.fullname}");
-    } else {
-      print("⚠️ Aucune donnée trouvée pour cet utilisateur.");
-      _user = null;
-    }
-
-  } catch (e) {
-    print("Erreur lors de la récupération des données utilisateur : $e");
-  } finally {
-    _isLoading = false;
-    notifyListeners();
   }
-}
 
 
   Future<void> updateUserData({

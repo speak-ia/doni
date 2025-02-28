@@ -81,12 +81,16 @@ class _AccueilState extends State<Accueil> {
                 MaterialPageRoute(builder: (context) => ProfileScreen()),
               );
             },
-            child: CircleAvatar(
-              backgroundImage: user?.photoUrl != null
-                  ? NetworkImage(user!.photoUrl!)
-                  : AssetImage('assets/images/logo.png') as ImageProvider,
-              radius: screenWidth * 0.05,
-            ),
+            child: userProvider.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : userProvider.user == null
+                    ? Center(child: Text("Aucun utilisateur connecté ou données non disponibles."))
+                    : CircleAvatar(
+                        backgroundImage: user?.photoUrl != null
+                            ? NetworkImage(user!.photoUrl!)
+                            : AssetImage('assets/images/logo.png') as ImageProvider,
+                        radius: screenWidth * 0.05,
+                      ),
           ),
         ),
         title: Column(
@@ -210,7 +214,7 @@ class _AccueilState extends State<Accueil> {
                           }
                         },
                         title: enquete.title,
-                        description: enquete.description, // Correction : 'enquete.description' au lieu de 'enquete.title'
+                        description: enquete.title, 
                         image: 'assets/images/logo.png',
                         status: enquete.status,
                       );
